@@ -1,12 +1,3 @@
-"""
-ui.py  –  All pygame rendering: map, panels, buttons, info display.
-
-Design: Dark Japanese war room aesthetic.
-  - Panel: Deep charcoal with warm gold/red accents
-  - Sections divided by thin gold separator lines with labels
-  - Province names coloured by owner, no circles
-  - Production queue as overlay cards on map
-"""
 import pygame
 import math
 from map import (PROVINCE_POSITIONS, ROUTES, TERRAIN, TERRAIN_COLORS,

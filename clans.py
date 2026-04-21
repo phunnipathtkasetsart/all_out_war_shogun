@@ -1,13 +1,11 @@
 from soldiers import Soldier
 from ui import RED, BLUE, GREEN, GOLD_COLOR
 
-# ── Clan matchup damage multipliers ──────────────────────────────────────────
-# clan_dmg_bonus[attacker][defender] = extra multiplier on top of base damage
 CLAN_MATCHUP = {
-    "Tada": {"Date": 1.30},   # Tada cavalry crushes Date swordsmen
-    "Date": {"Nori": 1.30},   # Date odachi shreds Nori ashigaru
-    "Abe":  {"Tada": 1.35},   # Abe yari specialist counters Tada cavalry
-    "Nori": {},                # Nori has no specific matchup bonus
+    "Tada": {"Date": 1.30},  
+    "Date": {"Nori": 1.30},  
+    "Abe":  {"Tada": 1.35},  
+    "Nori": {},              
 }
 
 def get_matchup_mult(attacker: str, defender: str) -> float:

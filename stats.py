@@ -1,29 +1,3 @@
-"""
-stats.py — Data logging, CSV export, and post-game statistics display.
-
-CSV schema (one row per event):
-  turn, time_elapsed, event_type, clan, province, units, provinces
-
-Event types:
-  RECRUIT        — clan recruited soldiers at a province
-  BATTLE_WIN     — clan won a field battle
-  BATTLE_LOSS    — clan lost a field battle
-  SIEGE_WIN      — clan conquered a province via siege
-  SIEGE_LOSS     — clan failed to siege a province
-  AMBUSH_WIN     — clan won an ambush
-  AMBUSH_LOSS    — clan was ambushed and lost
-  REBELLION      — province rebelled against owner
-  TURN_SNAPSHOT  — end-of-turn snapshot (clan power, gold, provinces)
-
-Graphs (shown after game ends):
-  1. Stacked Bar  — Soldiers Recruited vs Soldiers Lost (per turn)
-  2. Scatter Plot — Damage Dealt vs Damage Taken (per turn)
-  3. Bar Chart    — Total Territories Held Per Turn (green=gain, red=loss)
-  4. Cumulative Line — Overall military power growth per clan across turns
-  5. Line Chart   — Time spent per turn
-  + 1 Summary Table
-"""
-
 import csv
 import os
 import time
@@ -815,7 +789,6 @@ def _make_debug_data(player_clan: str) -> list:
                              province="Totomi", units=enemy_killed * 8,
                              provinces=provs[player_clan], damage=own_lost * 10,
                              units_lost=own_lost))
-        # Turn snapshots for all clans — units = power, provinces = territory count
         for clan in clans:
             power[clan] = max(100, power[clan] + random.randint(-50, 150))
             rows.append(dict(turn=turn, time_elapsed=round(t + 4, 1),

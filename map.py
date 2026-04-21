@@ -1,26 +1,3 @@
-"""
-map.py  –  Province nodes, route graph, terrain, army movement.
-
-Movement model
-──────────────
-Each route has a real km distance (scaled from pixel positions).
-Each army has a km/turn speed based on its total power:
-  Small  (<1500)  : 30 km/turn
-  Medium (<5000)  : 20 km/turn
-  Large  (≥5000)  : 12 km/turn
-  Mountain routes : speed × 0.6 (slower terrain)
-
-Army position is stored as (current_province, next_province, km_traveled).
-  - While km_traveled < route_km  → army is MID-ROUTE (renders between nodes)
-  - When km_traveled >= route_km  → army snaps to next_province, continues with
-    remaining km on the next segment of march_queue
-
-Conquest / neutral-claim penalty
-─────────────────────────────────
-After successfully capturing or claiming a province the army is EXHAUSTED:
-  - remaining_km = 0
-  - cannot march further that turn
-"""
 import math
 from collections import deque
 
@@ -121,17 +98,17 @@ def route_km(a: str, b: str) -> float:
     return ROUTE_KM.get((a, b), 30.0)
 
 # ── Speed model ───────────────────────────────────────────────────────────────
-SPEED_SMALL  = 30.0   # km/turn  power < 1500   — crosses most routes easily
-SPEED_MEDIUM = 25.0   # km/turn  power 1500–4999 — crosses all short routes, 1 turn most
-SPEED_LARGE  = 10.0   # km/turn  power ≥ 5000    — still 1 turn most routes, 2 for long ones
-MOUNTAIN_MULT = 0.65  # speed multiplier for mountain terrain
+SPEED_SMALL  = 30.0   
+SPEED_MEDIUM = 25.0   
+SPEED_LARGE  = 10.0   
+MOUNTAIN_MULT = 0.65  
 
 # Clan-specific speed multipliers
 CLAN_SPEED_MULT = {
-    "Tada": 1.35,   # Katana Cavalry — fast march
-    "Nori": 1.25,   # Ashigaru — light troops, fast
-    "Date": 1.0,    # Standard
-    "Abe":  0.80,   # Heavy yari formation — slow
+    "Tada": 1.35,   
+    "Nori": 1.25,   
+    "Date": 1.0,    
+    "Abe":  0.80,   
 }
 
 def army_speed(power: float, terrain: str, owner: str = "") -> float:
@@ -184,34 +161,21 @@ def bfs_path(start: str, goal: str, passable_fn=None) -> list:
 
 # ── MapArmy ───────────────────────────────────────────────────────────────────
 class MapArmy:
-    """
-    Army on the map.  Position is tracked in km along the current route segment.
-
-    Key attributes
-    ──────────────
-    province        : province the army is AT or departing FROM
-    next_province   : next province in march_queue (None if idle / at node)
-    km_traveled     : km covered on the current segment so far
-    remaining_km    : km budget left this turn
-    march_queue     : list of province names still to traverse
-    exhausted       : True if army captured/claimed a province this turn
-                      → no further movement allowed
-    """
     def __init__(self, owner: str, province: str, soldiers: list):
         self.owner          = owner
         self.province       = province
         self.soldiers       = soldiers
         self.march_queue    : list  = []
         self.next_province  : str | None = None
-        self.km_traveled    : float = 0.0   # along current segment
-        self.remaining_km   : float = 0.0   # budget left this turn
+        self.km_traveled    : float = 0.0   
+        self.remaining_km   : float = 0.0   
         self.moved_this_turn: bool  = False
         self.has_marched    : bool  = False
         self.is_ambushing   : bool  = False
-        self.exhausted      : bool  = False  # post-conquest penalty
-        self.siege_exhausted_turns: int = 0  # turns remaining blocked after siege (max 2)
-        self.siege_target   : str | None = None  # province to siege on arrival
-        self.hidden         : bool  = False  # True when hiding in forest (invisible to enemies)
+        self.exhausted      : bool  = False  
+        self.siege_exhausted_turns: int = 0  
+        self.siege_target   : str | None = None  
+        self.hidden         : bool  = False  
 
     # ── Stats ─────────────────────────────────────────────────────────────────
 
@@ -306,10 +270,6 @@ class MapArmy:
     def advance_turn(self) -> list:
         if self.exhausted or not self.next_province:
             return []
-
-        # FIX: Don't just reset budget to full speed if we are already 
-        # partially through a multi-step move sequence in the same turn.
-        # If remaining_km is 0 (start of turn), then we fetch the full budget.
         if self.remaining_km <= 0:
             self.remaining_km = self.turn_km_budget()
         

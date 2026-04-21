@@ -1,22 +1,9 @@
-"""
-ai.py  –  Aggressive AI.
-
-Key behaviours:
-  - EVERY army acts every turn — marching armies also attack if they pass an enemy
-  - Siege threshold lowered to 0.30 (will attempt even losing fights to soften)
-  - Attacks at 0.25 win_prob (always pressures)
-  - Target reassessed every turn — always picks the best current opportunity
-  - Armies don't over-consolidate — split between offence and home defence
-  - Neutrals captured aggressively (no penalty)
-  - Marching armies siege/attack any province they arrive at
-  - Difficulty bonus every 3 turns (was 5)
-"""
 import random
 from map import bfs_path, get_neighbors, MapArmy, TERRAIN, PROVINCE_POSITIONS
 from combat import resolve_battle, resolve_siege, group_power
 from city import CITY_LEVEL_CONFIG
 
-# ── Tuning ────────────────────────────────────────────────────────────────────
+
 WIN_PROB_ATTACK  = 0.25   # attack field army at this prob (very aggressive)
 WIN_PROB_SIEGE   = 0.30   # siege city at this prob
 WIN_PROB_CHIP    = 0.15   # always harass at any odds
@@ -174,7 +161,6 @@ class AIController:
     # ── Consolidate ───────────────────────────────────────────────────────────
 
     def _consolidate_armies(self, clan):
-        """Only merge idle armies at same province. Leave marching armies alone."""
         gs     = self.gs
         seen   = {}
         remove = []
@@ -193,11 +179,6 @@ class AIController:
     # ── Target selection — reassessed EVERY turn ──────────────────────────────
 
     def _pick_encircle_target(self, clan):
-        """
-        Always pick the best target fresh each turn.
-        Priority: retake lost > player province > weakest enemy > neutral.
-        Neutrals now get NO penalty — grab them.
-        """
         gs          = self.gs
         player_name = gs.player_clan_name
 
@@ -234,10 +215,6 @@ class AIController:
                 a.total_power() for a in gs.armies
                 if a.province == prov and a.owner != clan.name and a.is_alive())
 
-            # Score: lower = better
-            # Strong preference for player (attack them hard)
-            # Slight preference for weak enemies over neutrals
-            # Neutrals valued — don't penalise them
             player_bonus = -20 if city.owner == player_name else 0
             neutral_val  = -3  if city.owner == "Neutral"   else 0  # slight bonus for free land
             rebel_val    = -5  if city.owner == "Rebels"    else 0  # rebels are easy pickings
@@ -250,10 +227,6 @@ class AIController:
     # ── Army action ───────────────────────────────────────────────────────────
 
     def _act(self, clan, army):
-        """
-        Called for EVERY army every turn, including already-marching ones.
-        If a marching army arrives at/adjacent to a target, it acts immediately.
-        """
         gs        = self.gs
         neighbors = get_neighbors(army.province)
         my_power  = army.total_power()
@@ -395,7 +368,6 @@ class AIController:
                 self._process_entered(clan, army, entered)
 
     def _process_entered(self, clan, army, entered: list):
-        """Claim any neutral provinces the army walked through this turn."""
         gs = self.gs
         for prov in entered:
             city = gs.cities.get(prov)

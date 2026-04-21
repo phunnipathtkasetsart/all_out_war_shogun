@@ -14,14 +14,7 @@ CITY_NAMES = [
     "Ichinosu", "Ishikuni", "Tsurugagōri", "Komashiki", "Fukukuni",
 ]
 
-# ── City level config ─────────────────────────────────────────────────────────
-#
-# garrison_unit  : default units in garrison at this level
-# soldier_bonus  : extra units added to clan default when recruiting here
-# multiplier     : applied to soldier power AND tax income scaling
-# tax_min/max    : slider range for this level  (min = 500 * multiplier)
-# upgrade_cost   : gold cost to reach the NEXT level (None = max level)
-#
+
 CITY_LEVEL_CONFIG = {
     1: {
         "label":        "Village",
@@ -86,8 +79,7 @@ class City:
         self.owner      = owner
         self.city_level = city_level
         self.rage_level = rage_level
-        self.garrison_dmg = garrison_dmg        # set from clan dmg at creation
-        # Default tax to the minimum for this level
+        self.garrison_dmg = garrison_dmg        
         cfg = CITY_LEVEL_CONFIG[city_level]
         self.tax_level  = tax_level if tax_level is not None else cfg["tax_min"]
         self.stationed_soldiers    = []
@@ -95,11 +87,10 @@ class City:
         self.rage_over_limit_turns    = 0
         self.post_conquest_rage_turns = 0
         self.is_rebel_city: bool      = False
-        self.resistance_turns: int    = 0   # "resistance to invaders" penalty turns remaining
+        self.resistance_turns: int    = 0  
         self._rage_pressure_counter: int = 0
-        # ── Production queues ─────────────────────────────────────────────────
-        self.recruit_queue: list = []   # [(turns_left, Soldier), ...]  max 1 at a time
-        self.upgrade_turns_left: int = 0   # 0 = no upgrade in progress
+        self.recruit_queue: list = []   
+        self.upgrade_turns_left: int = 0   
 
     # ── Internal helpers ──────────────────────────────────────────────────────
 
@@ -210,53 +201,35 @@ class City:
         t_mid   = t_min + t_range * 0.5
         t_high  = t_min + t_range * 0.75
 
-        # ── Step 1: passive unrest drift ─────────────────────────────────────
-        # Every city has some baseline unrest — populations are never perfectly
-        # content. Higher city level = more complex society = faster drift.
-        # Village: +1 every 6t  Fortress: every 5t  Stronghold: every 4t
-        # Castle: every 3t      Citadel: every 2t
+
         drift_interval = max(2, 7 - self.city_level)   # 6,5,4,3,2
         self._rage_pressure_counter += 1
         if self._rage_pressure_counter >= drift_interval:
             self.rage_level = min(6, self.rage_level + 1)
             self._rage_pressure_counter = 0
 
-        # ── Step 2: tax pressure on top of drift ─────────────────────────────
+
         # Low tax slows / cancels drift. High tax adds extra rage immediately.
         if self.tax_level > t_high:
-            # Max tax bracket: extra +1 rage every turn (stacks with drift)
             self.rage_level = min(6, self.rage_level + 1)
         elif self.tax_level <= t_min:
-            # Minimum tax: reward — cancel this turn's drift tick if it fired
-            # (rage was already incremented above; undo it)
             self.rage_level = max(1, self.rage_level - 1)
         # Mid-low tax (t_min < tax <= t_mid): no extra pressure, drift only
         # Mid-high tax (t_mid < tax <= t_high): drift only (already faster at high levels)
 
-        # ── Step 3: resistance to invaders ───────────────────────────────────
         if self.resistance_turns > 0:
             # Conquered city: flat +1 rage per turn regardless of tax
             self.rage_level = min(3, self.rage_level + 1)
             self.resistance_turns -= 1
 
-        # ── Step 4: military suppression ─────────────────────────────────────
-        # Garrison is a small standing guard — provides minimal suppression.
-        # A stationed army (player armies at this province) meaningfully
-        # pacifies the population through visible military presence.
-        # High city levels are harder to suppress — drift is faster, cap lower.
-        #
-        # Garrison:  unit / 80   → Castle 200u = 2.5  (weak — it's just guards)
-        # Army:      unit / 20   → 600u = 30.0         (strong — visible force)
-        # Garrison capped at 3.0 regardless of size (it's a garrison, not army)
-        # Army capped at (8 - city_level): Village=7, Castle=4, Citadel=3
+
         garrison_sup = min(self.garrison.unit / 80, 3.0)
         army_sup     = sum(s.unit for s in self.stationed_soldiers) / 20
         army_cap     = max(1, 8 - self.city_level)   # 7,6,5,4,3
         army_sup     = min(army_sup, army_cap)
         suppression  = garrison_sup + army_sup
 
-        # Suppression > rage → rage decreases by 1.
-        # Post-conquest window: need suppression > rage+1 (active resistance).
+
         if self.post_conquest_rage_turns > 0:
             threshold = self.rage_level + 1
             self.post_conquest_rage_turns -= 1
@@ -266,7 +239,6 @@ class City:
         if suppression > threshold:
             self.rage_level = max(1, self.rage_level - 1)
 
-        # ── Step 5: rebellion tracking + warning ──────────────────────────────
         if self.rage_level > 5:
             self.rage_over_limit_turns += 1
         else:
@@ -298,7 +270,6 @@ class City:
             return False
         cfg  = self._config()
         base_unit = clan.default_unit + cfg["soldier_bonus"]
-        # Apply clan recruit bonus (Nori gets +30% troops)
         unit = int(base_unit * getattr(clan, 'recruit_bonus', 1.0))
         cost = self.recruit_cost(unit)
         if not clan.can_afford(cost):
@@ -315,10 +286,6 @@ class City:
         return True
 
     def tick_queues(self) -> list:
-        """
-        Advance all production queues by 1 turn.
-        Returns list of completed Soldier objects ready to spawn.
-        """
         ready = []
         still_building = []
         for entry in self.recruit_queue:
@@ -348,10 +315,6 @@ class City:
                 and len(self.recruit_queue) == 0)
 
     def queue_upgrade(self, clan) -> bool:
-        """
-        Pay gold upfront, start a 3-turn upgrade countdown.
-        Returns True on success.
-        """
         if not self.can_queue_upgrade():
             return False
         cost = self._config()["upgrade_cost"]
@@ -364,18 +327,6 @@ class City:
     # ── Conquest ─────────────────────────────────────────────────────────────
 
     def on_conquered(self, new_owner: str, new_garrison_dmg: float = None):
-        """
-        Called when city is captured by a new clan.
-
-        RESISTANCE TO INVADERS:
-          Sets resistance_turns based on city level — bigger, more developed
-          cities have populations more entrenched with the old ruler.
-          Village=3, Fortress=4, Stronghold=5, Castle=6, Citadel=8 turns
-
-        Rage inherits old owner's rage + 1 (capped at 6).
-        Post-conquest suppression window = 3 turns (stricter military needed).
-        Rebel city reconquest gets longer window (5 turns).
-        """
         # Resistance to invaders: scales with city development
         resistance_by_level = {1: 3, 2: 4, 3: 5, 4: 6, 5: 8}
         self.resistance_turns = resistance_by_level.get(self.city_level, 3)
@@ -395,10 +346,6 @@ class City:
         self._rage_pressure_counter = 0
 
     def on_rebelled(self):
-        """
-        City rebels — becomes independent Rebels faction.
-        Marks is_rebel_city so reconquering owner knows rage will be elevated.
-        """
         old_owner = self.owner
         self.owner = REBEL_CLAN_NAME
         self.garrison_dmg = 3.0

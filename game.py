@@ -1,16 +1,3 @@
-"""
-game.py  –  Main entry point. Run this file to start the game.
-
-    python game.py
-
-Requires: pygame  (pip install pygame)
-
-Input modes (state machine):
-  NORMAL        – default, click army/province to select
-  MARCH         – army selected, waiting for player to click a destination
-  ATTACK_TARGET – waiting for player to click an enemy ARMY to attack
-  SIEGE_TARGET  – waiting for player to click an enemy PROVINCE to siege
-"""
 import pygame
 import sys
 import os
@@ -37,10 +24,6 @@ class InputMode(Enum):
 
 
 def _load_saved_game(screen, clock, fps):
-    """
-    Show the in-game save-file list picker, load the chosen CSV,
-    then show the stats screen.  No external OS file dialog is used.
-    """
     save_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "saves")
     saves    = StatsLogger.list_saved_games(save_dir)
     if not saves:
@@ -55,7 +38,6 @@ def _load_saved_game(screen, clock, fps):
     if not rows:
         return
 
-    # Detect player clan from event types logged only for the player
     def _detect_player_clan(rows):
         for r in rows:
             if r["event_type"] == "RECRUIT" and r["clan"]:
@@ -70,22 +52,17 @@ def _load_saved_game(screen, clock, fps):
         return rows[0]["clan"] if rows else "Unknown"
 
     player_clan = _detect_player_clan(rows)
-
-    # Only show clans that have at least one player-action event.
-    # This filters out AI-only clans that appear solely in TURN_SNAPSHOT rows.
     active_event_types = {"RECRUIT", "REBELLION", "SIEGE_WIN", "SIEGE_LOSS",
                           "BATTLE_WIN", "BATTLE_LOSS", "AMBUSH_WIN", "AMBUSH_LOSS"}
     detected_clans = sorted({r["clan"] for r in rows
                               if r["clan"] and r["event_type"] in active_event_types})
 
-    # Safety fallback: if no action events exist, use snapshot clans
     if not detected_clans:
         detected_clans = sorted({r["clan"] for r in rows
                                   if r["clan"] and r["event_type"] == "TURN_SNAPSHOT"})
     if player_clan not in detected_clans and detected_clans:
         player_clan = detected_clans[0]
 
-    # Let the user confirm / change only among detected (player-action) clans
     if len(detected_clans) > 1:
         chosen = _pick_player_clan(screen, clock, fps, detected_clans, player_clan)
         if chosen:
@@ -179,10 +156,6 @@ def _draw_no_saves_notice(screen, clock, fps):
 
 
 def _pick_save_in_game(screen, clock, fps, saves):
-    """
-    In-game scrollable list to pick a save file when tkinter is unavailable.
-    Returns the selected path or None if cancelled.
-    """
     from ui import FONT_SM, FONT_MD, FONT_LG, PANEL_BG, PANEL_LINE, WHITE, GOLD_COLOR, GRAY, HIGHLIGHT
     selected = None
     scroll   = 0
@@ -298,16 +271,13 @@ def main():
         clock.tick(FPS)
 
         sw, sh = screen.get_size()
-        # Panel is always right 300px; map is everything left of it
         panel_x = sw - 300
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
 
-            # F11 → toggle fullscreen
             if event.type == pygame.KEYDOWN and event.key == pygame.K_F9:
-                # Debug: show stats screen immediately with current data
                 show_stats_screen(screen, gs.stats.rows, gs.player_clan_name,
                                   "Debug", clock, FPS)
 
@@ -320,13 +290,10 @@ def main():
                 renderer.surface = screen
                 init_fonts()
 
-            # Window resized
             if event.type == pygame.VIDEORESIZE:
                 screen = pygame.display.set_mode(
                     (max(event.w, 960), max(event.h, 600)), pygame.RESIZABLE)
                 renderer.surface = screen
-
-            # Middle/right mouse drag → pan map (consume before other handlers)
             if renderer.handle_camera(event):
                 continue
 
@@ -334,50 +301,31 @@ def main():
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 pos = event.pos
-
-                # Block ALL clicks during map fade transition
                 if renderer.is_fading():
                     continue
-
-                # Ambush popup: only intercept clicks ON the popup buttons
                 if gs.pending_ambush and not gs.pending_ambush.resolved:
                     wr = getattr(gs, '_ambush_withdraw_rect', None)
                     fr = getattr(gs, '_ambush_fight_rect',    None)
                     if (wr and wr.collidepoint(pos)) or (fr and fr.collidepoint(pos)):
                         _handle_ambush_click(pos, gs)
-                        continue   # ate the click on a popup button
-
-                # Right panel = last 300px of screen
+                        continue   
                 if pos[0] >= panel_x:
                     mode = _handle_panel_click(event, gs, renderer, mode)
                     continue
-
-                # Map area
                 mode = _handle_map_click(pos, gs, renderer, mode)
 
-        # Edge scroll when mouse near map border
         renderer.update_edge_scroll()
-
-        # Advance map fade state machine
         renderer.advance_map_fade()
-
         renderer.set_mode_label(_mode_label(mode))
         renderer.draw()
-
-        # Ambush notification drawn on top
         if gs.pending_ambush and not gs.pending_ambush.resolved:
             _draw_ambush_popup(screen, gs, renderer)
-
-        # Disable Next Turn button while animating OR fading
         renderer.btn_next_turn.enabled = (not renderer.is_animating()
                                            and not renderer.is_fading())
-
-        # Map area fade overlay (drawn OVER map, not over panel)
         renderer.draw_map_fade(screen)
 
         if gs.game_over:
             _draw_game_over(screen, gs)
-            # First time: save CSV and show stats screen
             if not getattr(gs, '_stats_shown', False):
                 gs._stats_shown = True
                 gs.stats.save()

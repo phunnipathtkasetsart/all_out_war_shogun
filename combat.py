@@ -1,19 +1,3 @@
-"""
-combat.py  –  Resolves all combat: Attack, Siege, Ambush.
-
-Power model
-───────────
-  Group total power  = sum(s.unit * s.dmg * s.multiplier) for all soldiers
-  Avg dmg of group   = total_power / total_units  (weighted average damage per unit)
-  Units lost (side)  = enemy_total_power / avg_dmg_of_this_side
-                     = enemy_total_power * total_units / total_power
-
-This guarantees:
-  5 soldiers × power 100 each = 500 total  →  same loss as  1 soldier × power 500
-Losses are then spread proportionally across all soldier objects on that side.
-"""
-
-# Lazy import to avoid circular dependency (clans imports ui imports map)
 def _get_matchup_mult(attacker: str, defender: str) -> float:
     try:
         from clans import get_matchup_mult
@@ -25,27 +9,14 @@ def _get_matchup_mult(attacker: str, defender: str) -> float:
 # ── Group helpers ─────────────────────────────────────────────────────────────
 
 def group_power(soldiers: list) -> float:
-    """Sum of all soldier/garrison power in a group."""
     return sum(s.power() for s in soldiers)
 
 
 def group_units(soldiers: list) -> int:
-    """Total unit count across all soldiers in a group."""
     return sum(s.unit for s in soldiers)
 
 
 def units_lost(enemy_power: float, my_soldiers: list) -> int:
-    """
-    How many total units this side loses when hit by enemy_power.
-    Uses weighted-average dmg so that 10 weak objects = 1 strong object
-    at equal total power.
-
-    Formula:  units_lost = enemy_power * total_units / total_power
-    (Derived from:  units_lost = enemy_power / avg_dmg
-                    avg_dmg    = total_power / total_units)
-
-    Floors at 1 so every battle always costs something.
-    """
     my_power = group_power(my_soldiers)
     my_units = group_units(my_soldiers)
     if my_power <= 0 or my_units <= 0:
@@ -55,11 +26,6 @@ def units_lost(enemy_power: float, my_soldiers: list) -> int:
 
 
 def apply_losses(soldiers: list, total_lost: int):
-    """
-    Spread `total_lost` units across soldier objects proportionally to their
-    current unit count, then remove dead ones.
-    Returns the survivors list.
-    """
     total = group_units(soldiers)
     remaining_to_lose = total_lost
 
@@ -86,10 +52,6 @@ def apply_losses(soldiers: list, total_lost: int):
 # ── Battle ────────────────────────────────────────────────────────────────────
 
 def resolve_battle(attacker_army, defender_army):
-    """
-    Field battle between two MapArmy objects.
-    Both sides take losses simultaneously based on group totals.
-    """
     atk_soldiers = attacker_army.soldiers
     def_soldiers = defender_army.soldiers
 
@@ -135,16 +97,6 @@ def resolve_battle(attacker_army, defender_army):
 
 def resolve_siege(attacker_army, city, province_key: str = None,
                   new_garrison_dmg: float = None, defending_armies: list = None):
-    """
-    Siege a City.
-
-    Defenders = garrison + city.stationed_soldiers + any MapArmy objects
-                physically present at the province (defending_armies).
-
-    All defender soldiers are pooled into one group for power calculation.
-    province_key: map node name so attacker moves to correct province on win.
-    defending_armies: list of MapArmy objects at the province (passed from caller).
-    """
     if defending_armies is None:
         defending_armies = []
 
@@ -216,11 +168,6 @@ def resolve_siege(attacker_army, city, province_key: str = None,
 # ── Ambush ────────────────────────────────────────────────────────────────────
 
 def resolve_ambush(ambusher_army, victim_army):
-    """
-    Ambush: ambusher's group power is doubled for a first strike.
-    Victim takes full first-strike damage before they can fight back.
-    Only valid from forest terrain (enforced in game.py).
-    """
     atk_soldiers = ambusher_army.soldiers
     def_soldiers = victim_army.soldiers
 

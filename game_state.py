@@ -17,17 +17,12 @@ class GameState:
         self.winner = None
         self.log_messages = []     # recent event log for UI
         self.data_log = []         # per-turn CSV data
-
-        # Build clans
         self.clans = make_clans()
-
-        # Build cities for every province
         self.cities = {}
         clan_provinces = {v: k for k, v in CLAN_STARTS.items()}
 
         for prov in PROVINCE_POSITIONS:
             owner = clan_provinces.get(prov, "Neutral")
-            # Garrison fights with the owning clan's default dmg
             gdmg = self.clans[owner].default_dmg if owner in self.clans else 3.0
             self.cities[prov] = make_city(
                 name=random.choice(CITY_NAMES),
@@ -35,8 +30,6 @@ class GameState:
                 level=1,
                 garrison_dmg=gdmg,
             )
-
-        # Spawn starting armies for each clan
         self.armies = []
         for clan_name, clan in self.clans.items():
             start_prov = CLAN_STARTS[clan_name]
@@ -44,22 +37,14 @@ class GameState:
             army = MapArmy(clan_name, start_prov, [soldier])
             army.remaining_km = army.turn_km_budget()
             self.armies.append(army)
-
-        # Forest ambush points
         self.forests: dict = make_forest_points()
-
-        # Stats / CSV logger
         self.stats = StatsLogger(save_dir="saves")
         self._turn_start_time_real = __import__('time').time()
-
-        # Pending ambush event for player (shown as quick-event popup)
         self.pending_ambush: AmbushEvent | None = None
-
-        # Track player selection
-        self.selected_army = None       # MapArmy currently selected
-        self.selected_province = None   # Province name currently selected
-        self.highlighted_provinces = []  # provinces to highlight (march/siege targets)
-        self.highlighted_armies    = []  # MapArmy objects highlighted as attack targets
+        self.selected_army = None       
+        self.selected_province = None   
+        self.highlighted_provinces = []  
+        self.highlighted_armies    = []  
 
     # ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -113,10 +98,8 @@ class GameState:
             self.log("Your clan has been eliminated. GAME OVER.")
 
     def _resolve_player_siege(self, army, target_prov):
-        """Auto-resolve siege when player army arrives at siege_target province."""
         from combat import resolve_siege
         city = self.cities.get(target_prov)
-        # Skip if no city, or if player already owns it, or if it's neutral (claim instead)
         if not city or city.owner == self.player_clan_name or city.owner == "Neutral":
             army.siege_target = None
             return
@@ -196,24 +179,19 @@ class GameState:
                      f"({strongest.turns_to_arrive()} turns away)")
 
     def end_turn(self):
-        """Advance one turn: march queues advance, rage/tax, then AI acts."""
         from ai import AIController
 
-        # ── 0. Auto-exit forests for any army that started marching ───────────
         for fp in self.forests.values():
             for army in list(fp.armies):
                 if fp.should_auto_exit(army):
                     fp.exit(army)
 
-        # ── 1. Advance all player marching armies by km budget ────────────────
         player = self.player_clan()
         for army in self.get_player_armies():
             if not army.is_marching():
-                # Check: army just arrived last turn and has a pending siege
                 if army.siege_target and army.province == army.siege_target:
                     self._resolve_player_siege(army, army.siege_target)
                 continue
-            # Check ambush — player gets popup (fight only), AI auto-fights
             if army.next_province and not army.exhausted:
                 amb = check_ambush(army, self)
                 if amb:
