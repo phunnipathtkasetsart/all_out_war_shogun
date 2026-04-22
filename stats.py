@@ -2,10 +2,23 @@ import csv
 import os
 import time
 import datetime
+import pygame
+
+# lazy debug1 */ Fix territory gains/lost */
+gain = 0 #lazy debug
+lost = 0
+def territory_helper(territories, max_t):
+    global gain,lost
+    # Stats for subtitle
+    gains  = sum(1 for t in range(2, max_t+1) if territories[t] > territories[t-1] > 0)
+    gain = gains
+    losses = sum(1 for t in range(2, max_t+1) if 0 < territories[t] < territories[t-1])
+    lost = losses
+
+
 
 
 # ── CSV logger ────────────────────────────────────────────────────────────────
-
 class StatsLogger:
     """
     Logs every game event as a row in a CSV file.
@@ -190,21 +203,15 @@ def _per_turn(rows: list, player_clan: str, max_turn: int):
 
 
 # ── Pygame stats screen ───────────────────────────────────────────────────────
-
 def show_stats_screen(screen, rows: list, player_clan: str,
                       result: str, clock, FPS: int = 60):
-    """
-    Full-screen post-game statistics display.
-    Shows summary table + 5 graphs navigated with arrow keys or mouse clicks.
-    Press ESC or Q to close.
-    """
+
     import pygame
     from ui import (FONT_SM, FONT_MD, FONT_LG, FONT_TL,
                     GOLD_COLOR, WHITE, GRAY, RED, GREEN,
                     PANEL_BG, PANEL_LINE, ACCENT_RED, ORANGE, BLUE)
 
-    if not rows:
-        rows = _make_debug_data(player_clan)
+
 
     # max_turn from TURN_SNAPSHOT of any clan, or from any row
     snap_turns = [r["turn"] for r in rows if r["event_type"] == "TURN_SNAPSHOT"]
@@ -287,10 +294,13 @@ def show_stats_screen(screen, rows: list, player_clan: str,
         content_h = sh - content_y - 30
 
         if page == 0:
+            territory_helper(pt["territories"], max_turn)
             _draw_summary_table(screen, summary, player_clan, result,
                                 sw, content_y, content_h,
                                 FONT_SM, FONT_MD, FONT_LG, FONT_TL,
                                 GOLD_COLOR, WHITE, GRAY, GREEN, RED, PANEL_LINE)
+            
+
         elif page == 1:
             _draw_stacked_bar(screen, pt["recruited"], pt["lost"], max_turn,
                               "Soldiers Recruited vs Soldiers Lost",
@@ -364,12 +374,13 @@ def _draw_summary_table(surf, s, player_clan, result,
                          sw, cy, ch, fs, fm, fl, ft,
                          GOLD, WHITE, GRAY, GREEN, RED, LINE):
     import pygame
+    global gain,lost
     metrics = [
         ("Total Turns",          str(s["total_turns"])),
         ("Soldiers Recruited",   f"{s['recruited']:,}"),
         ("Soldiers Lost",        f"{s['lost']:,}"),
-        ("Provinces Conquered",  str(s["cities_gained"])),
-        ("Provinces Lost",       str(s["cities_lost"])),
+        ("Provinces Conquered",  str(gain)),
+        ("Provinces Lost",       str(lost)),
         ("Total Damage Dealt",   f"{s['damage_dealt']:,}  (enemy units killed)"),
         ("Total Damage Taken",   f"{s['damage_taken']:,}  (own units lost)"),
         ("Game Result",          result),
@@ -463,17 +474,10 @@ def _draw_scatter(surf, series_a, series_b, max_t,
     surf.blit(fs.render("Player Taken", True, GRAY), (cx+134, gy+gh+34))
 
 
+
 def _draw_territory_chart(surf, territories, max_t,
                           title, col_line, col_avg,
                           sw, cy, ch, fs, fm, WHITE, GRAY, LINE):
-    """
-    Bar chart: total territories per turn + dashed average line.
-    - No per-bar value labels (too cluttered at high turn counts).
-    - Fine Y-axis ticks at every integer territory value.
-    - Colour palette: teal for neutral/held, amber for gain, crimson for loss.
-    All text clipped to chart bounds.
-    """
-    import pygame
     cx, gy, cw, gh = _chart_area(sw, cy, ch)
 
     active  = [territories[t] for t in range(1, max_t + 1) if territories[t] > 0]
@@ -486,10 +490,10 @@ def _draw_territory_chart(surf, territories, max_t,
     peak   = max(active) if active else 0
 
     # Colours — teal/amber/crimson palette
-    COL_NEUTRAL = (56, 189, 180)    # teal   — held, no change
-    COL_GAIN    = (255, 185,  30)   # amber  — gained territory this turn
-    COL_LOSS    = (210,  50,  60)   # crimson — lost territory this turn
-    COL_AVG     = (200, 160,  60)   # warm gold for average line
+    COL_NEUTRAL = (56, 189, 180)    
+    COL_GAIN    = (255, 185,  30)   
+    COL_LOSS    = (210,  50,  60)   
+    COL_AVG     = (200, 160,  60)   
 
     surf.blit(fm.render(title, True, WHITE), (cx, cy + 2))
 
@@ -639,10 +643,6 @@ def _draw_line_chart(surf, series, max_t,
 # ── Raw data viewer ─────────────────────────────────────────────────────────────
 
 def _draw_raw_data(surf, rows, sw, cy, ch, fs, fm, WHITE, GRAY, GOLD, LINE, BG):
-    """
-    Scrollable table showing all CSV rows with all 9 fields.
-    Scroll with UP/DOWN or mouse wheel.
-    """
     import pygame
 
     COLS = ["turn", "time_elapsed", "event_type", "clan",
@@ -732,68 +732,3 @@ def _draw_raw_data(surf, rows, sw, cy, ch, fs, fm, WHITE, GRAY, GOLD, LINE, BG):
         surf.blit(info, (start_x + sum(COL_W) + 16, cy + PAD_T + 2))
 
 
-# ── Debug data generator ──────────────────────────────────────────────────────
-
-def _make_debug_data(player_clan: str) -> list:
-    """Generate plausible mock data for UI testing."""
-    import random
-    rows = []
-    clans = [player_clan, "Date", "Nori", "Abe"]
-    clans = [c for c in clans if c]
-    if player_clan not in clans:
-        clans.insert(0, player_clan)
-
-    power = {c: 500 for c in clans}
-    provs = {player_clan: 1, **{c: 1 for c in clans if c != player_clan}}
-
-    for turn in range(1, 21):
-        t = 0.0
-        # Recruits — units = soldiers recruited this turn
-        for _ in range(random.randint(1, 3)):
-            u = random.randint(55, 200)
-            power[player_clan] += u * 10   # rough power estimate
-            t += random.uniform(2, 8)
-            rows.append(dict(turn=turn, time_elapsed=round(t, 1),
-                             event_type="RECRUIT", clan=player_clan,
-                             province="Kyoto", units=u,
-                             provinces=provs[player_clan], damage=0, units_lost=0))
-        # Battle win — units = own lost, damage = enemy killed
-        if random.random() < 0.5:
-            own_lost   = random.randint(5, 30)
-            enemy_killed = random.randint(20, 80)
-            own_power_dealt = own_lost * 10
-            enemy_power_dealt = enemy_killed * 8
-            rows.append(dict(turn=turn, time_elapsed=round(t + 1, 1),
-                             event_type="BATTLE_WIN", clan=player_clan,
-                             province="Owari", units=int(enemy_power_dealt),
-                             provinces=provs[player_clan], damage=int(own_power_dealt),
-                             units_lost=own_lost))
-        # Battle loss — units = own lost, damage = enemy killed (player still dealt some)
-        if random.random() < 0.3:
-            own_lost   = random.randint(20, 60)
-            enemy_killed = random.randint(5, 30)
-            own_power_dealt2 = own_lost * 10
-            enemy_power_dealt2 = enemy_killed * 8
-            rows.append(dict(turn=turn, time_elapsed=round(t + 2, 1),
-                             event_type="BATTLE_LOSS", clan=player_clan,
-                             province="Kanto", units=int(enemy_power_dealt2),
-                             provinces=provs[player_clan], damage=int(own_power_dealt2),
-                             units_lost=own_lost))
-        # Siege wins — territory gained
-        if turn % 4 == 0:
-            provs[player_clan] += 1
-            own_lost   = random.randint(10, 40)
-            enemy_killed = random.randint(30, 100)
-            rows.append(dict(turn=turn, time_elapsed=round(t + 3, 1),
-                             event_type="SIEGE_WIN", clan=player_clan,
-                             province="Totomi", units=enemy_killed * 8,
-                             provinces=provs[player_clan], damage=own_lost * 10,
-                             units_lost=own_lost))
-        for clan in clans:
-            power[clan] = max(100, power[clan] + random.randint(-50, 150))
-            rows.append(dict(turn=turn, time_elapsed=round(t + 4, 1),
-                             event_type="TURN_SNAPSHOT", clan=clan,
-                             province="", units=power[clan],
-                             provinces=provs.get(clan, 1), damage=0, units_lost=0))
-
-    return rows
