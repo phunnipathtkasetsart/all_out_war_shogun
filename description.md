@@ -20,13 +20,13 @@ Historical strategy game players interested in realistic town management and war
 
 ## Gameplay
 
-<img width="1920" height="1123" alt="gameplay_map" src="https://github.com/user-attachments/assets/274d3506-2dbd-4c23-9561-f108f84580ac" />
+![gameplay_map](images/gameplay_map.png)
 
 
 ---
 
 ## Data Visualization
-<img width="1920" height="1097" alt="data_visualization" src="https://github.com/user-attachments/assets/0ad816d3-a8a2-4189-9e37-4bd07b5d548b" />
+![data_visualization](images/data_visualization.png)
 
 
 ---
@@ -75,7 +75,7 @@ Conquer all **16 provinces** on the map while overcoming enemy AI factions.
 
 ### UML Class Diagram
 
-<img width="2048" height="1980" alt="uml_class_diagram" src="https://github.com/user-attachments/assets/e414c996-0694-4aa5-b67b-4fb0c7a9bc89" />
+![uml_class_diagram](images/uml_class_diagram.png)
 
 
 ### Clan's Default Soldier Info
@@ -108,11 +108,11 @@ Helper: `make_city()` — factory function for instantiating City objects with s
 
 | Recruiting Soldiers | Upgrading City |
 |---|---|
-| <img width="363" height="194" alt="production_queue_recruiting" src="https://github.com/user-attachments/assets/d6973da3-0043-481e-b3c1-4f2f163172b0" /> | <img width="145" height="197" alt="production_queue_upgrading" src="https://github.com/user-attachments/assets/aba3e5af-a8e5-4f64-ac97-8343d756075c" /> |
+| ![production_queue_recruiting](images/production_queue_recruiting.png) | ![production_queue_upgrading](images/production_queue_upgrading.png) |
 
 **Economics and Public Order:**
 
-<img width="378" height="376" alt="economics_rage_tax" src="https://github.com/user-attachments/assets/1d7a126e-62a2-4f09-9ed8-178c4fb8b5ae" />
+![economics_rage_tax](images/economics_rage_tax.png)
 
 
 ### Class: `Clan`
@@ -136,7 +136,7 @@ Additional responsibilities:
 - Entering a forest hides the army and snaps its position to the forest's coordinates.
 - Armies are auto-revealed when they begin marching or leave the connected provinces.
 
-<img width="1534" height="1115" alt="forest_points" src="https://github.com/user-attachments/assets/c6b99c4c-77da-4f5f-a57b-b00f7a604d15" />
+![forest_points](images/forest_points.png)
 
 
 ### Class: `AmbushEvent`
@@ -171,7 +171,7 @@ Handles logic when a marching army enters a route with hidden enemies. Offers tw
 
 | Enemy BFS | Player Marching |
 |---|---|
-| <img width="758" height="528" alt="enemy_bfs" src="https://github.com/user-attachments/assets/35d94d43-e5de-4d74-b65e-1b8c2d3c95b8" /> | <img width="681" height="425" alt="player_marching" src="https://github.com/user-attachments/assets/909c9ad8-937f-4b97-b49f-e9a0ca820a1a" /> |
+| ![enemy_bfs](images/enemy_bfs.png) | ![player_marching](images/player_marching.png) |
 
 ### Class: `Troops`
 
@@ -203,7 +203,7 @@ Handles logic when a marching army enters a route with hidden enemies. Offers tw
 - **Event Logging** — Captures `RECRUIT`, `BATTLE_WIN`, `SIEGE_WIN`, and `REBELLION` events.
 - **Timer System** — Tracks `time_elapsed` per turn to analyze decision-making speed.
 
-<img width="222" height="116" alt="csv_creation" src="https://github.com/user-attachments/assets/6d52faa6-261d-4aa7-bbd7-34dbf0c32f46" />
+![csv_creation](images/csv_creation.png)
 
 
 ---
