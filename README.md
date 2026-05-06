@@ -1,4 +1,4 @@
-# YOUR_PROJECT_NAME
+# ALL OUT WAR : SHOGOUN
 
 ## Project Description
 
@@ -96,19 +96,4 @@ You contents here
 
 ---
 
-## Known Bugs
-You contents here
-
----
-
-## Unfinished Works
-You contents here (incase you finish all of your task please identify)
-
----
-
-## External sources
-Acknowledge to:
-1. Firing bullets code, http://examplesource.com [game source code]
-2. Character animation, http://examplesource.com [game source code]
-3. ILoveTAs, thanksTA.net [game background music]
 
