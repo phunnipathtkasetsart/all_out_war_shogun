@@ -91,7 +91,7 @@ Your command center for managing:
 
 ### 3. Actions of Conquest
 
-![attack](https://github.com/user-attachments/assets/f8a2f1c4-2161-4e79-903c-4c568fb7bd16)
+![gameplay_map](images/gameplay_panel.png)
 
 - **March** — Select your unit on the map and click March, then select a destination. Army size dictates range — larger armies move shorter distances. *You must follow established routes and cannot pass enemy castles or obstacles.*
 
@@ -113,7 +113,7 @@ Tax income scales from `500–1000 × city level multiplier`. Rage levels range 
 - If `(garrison units × 10) + (soldier units × 10) < tax` → Rage decreases by 1 next turn
 - Otherwise → Rage increases by +1 every turn
 
-> ⚠️ If Rage reaches level 6, you will lose the province to a rebellion.
+> If Rage reaches level 6, you will lose the province to a rebellion.
 
 ---
 
@@ -123,8 +123,8 @@ Conquer all **16 provinces** on the map while overcoming enemy AI factions.
 
 | Condition | Result |
 |-----------|--------|
-| Conquer all cities | ✅ **Win** |
-| Player territory reaches 0 | ❌ **Lose** |
+| Conquer all cities | **Win** |
+| Player territory reaches 0 | **Lose** |
 
 ---
 
@@ -132,7 +132,7 @@ Conquer all **16 provinces** on the map while overcoming enemy AI factions.
 
 ### Data Visualization
 
-After each game ends (win or loss), the game generates an in-depth analytics report consisting of **1 summary table** and **5 graphs**.
+After each game ends (win or loss), the game generates an in-depth analytics report consisting of **1 summary table** and **5 graphs**. Or load the game save manually
 
 ![data_visualization](images/data_visualization.png)
 
@@ -170,15 +170,6 @@ Game_1_29-3-2026.csv
 Game_2_30-3-2026.csv
 ```
 
----
-
-## Links
-
-- **Project Proposal:** *link*
-- **YouTube Presentation:** *link*
-- **UML Class Diagram:** *link*
-
----
 
 ## Document Version History
 
