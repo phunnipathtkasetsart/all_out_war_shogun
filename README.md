@@ -138,29 +138,6 @@ After each game ends (win or loss), the game generates an in-depth analytics rep
 
 Every player action is logged as its own row. A 20-turn game produces roughly **100–200 rows** (e.g., each battle logs 2 rows, each recruit logs 1 row). Players can also load statistics from previously completed games — each stored as a separate CSV file — to regenerate graphs and tables for analysis.
 
-#### Summary Table
-
-| Metric | Value |
-|--------|-------|
-| Total Turns | 120 |
-| Soldiers Recruited | 1,250 |
-| Soldiers Lost | 980 |
-| Cities Gained | 12 |
-| Cities Lost | 8 |
-| Total Damage Dealt | 5,430 |
-| Total Damage Taken | 4,870 |
-| Game Result | Win |
-
-#### Graphs
-
-| Feature | Objective | Chart Type |
-|---------|-----------|------------|
-| Soldiers Recruited vs Lost | Measure recruitment efficiency and bot difficulty | Stacked Bar Chart |
-| Damage Dealt vs Taken | Compare total damage for player vs AI | Scatter Plot |
-| Cities Gained vs Lost | Measure territorial efficiency | Bar Chart |
-| Military Growth Over Time | Show overall power growth across turns | Cumulative Line Chart |
-| Time Per Turn | Track average decision-making time | Line Chart |
-
 ### Data Recording
 
 Game data is saved to a uniquely named CSV file per session in the format `game[#]_day-month-year`:
