@@ -200,7 +200,3 @@ All visualization and data logic is implemented in `stats.py`:
 | `_draw_cumulative_line()` | Renders the Military Power Growth chart |
 | `_draw_line_chart()` | Renders the Time Per Turn chart |
 | `_draw_raw_data()` | Renders the scrollable raw event log table |
-
-### Debug Mode
-
-The stats screen supports a **debug mode** with mock-up data for display testing — this triggers the game state to end early and shows the statistical screen with pre-filled data, without needing to play a full game.
